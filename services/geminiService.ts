@@ -7,11 +7,13 @@ export const performClinicalAnalysis = async (
   answers: Answer[],
   questions: Question[]
 ): Promise<AssessmentResult> => {
-  // Safe access to process.env to prevent white screen if process is undefined
-  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : '';
+  // Check multiple possible env variable names used in common deployment setups
+  const apiKey = typeof process !== 'undefined' 
+    ? (process.env.API_KEY || process.env.VITE_API_KEY) 
+    : '';
   
   if (!apiKey) {
-    throw new Error("API Key is missing. Please configure it in environment variables.");
+    throw new Error("Критическая ошибка: API_KEY не настроен. Пожалуйста, добавьте API_KEY в переменные окружения Vercel.");
   }
 
   const ai = new GoogleGenAI({ apiKey });

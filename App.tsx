@@ -16,7 +16,7 @@ const App: React.FC = () => {
 
   const start = () => {
     if (!childInfo.name.trim()) return setError("Укажите имя пациента");
-    if (childInfo.age < 1 || childInfo.age > 10) return setError("Возраст: от 1 до 10 лет");
+    if (!childInfo.age || childInfo.age < 1 || childInfo.age > 10) return setError("Возраст: от 1 до 10 лет");
     setQuestions(getQuestionsForAge(childInfo.age));
     setStep('test');
     setError(null);
@@ -40,7 +40,11 @@ const App: React.FC = () => {
       setStep('result');
     } catch (e: any) {
       console.error(e);
-      setError(e.message || "Ошибка связи с ИИ. Проверьте настройки API_KEY.");
+      // Detailed error message to help debug Vercel environment issues
+      const msg = e.message?.includes('API_KEY') 
+        ? "Ошибка: API_KEY не найден в настройках Vercel." 
+        : "Ошибка связи с ИИ. Попробуйте еще раз позже.";
+      setError(msg);
       setStep('info');
     }
   };
@@ -89,12 +93,20 @@ const App: React.FC = () => {
               placeholder="ФИО ребенка"
             />
             <div className="grid grid-cols-2 gap-6 mb-8">
-              <InputField 
-                label="Возраст" 
-                type="number" 
-                value={childInfo.age} 
-                onChange={(v) => setChildInfo({...childInfo, age: parseInt(v) || 0})} 
-              />
+              <div className="flex flex-col gap-2 w-full text-left">
+                <label className="text-sm font-bold text-slate-500 ml-1 uppercase tracking-wider">Возраст</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  max="10"
+                  value={childInfo.age || ''} 
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                    setChildInfo({...childInfo, age: val});
+                  }}
+                  className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all bg-slate-50 text-slate-900"
+                />
+              </div>
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Пол</label>
                 <select 

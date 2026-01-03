@@ -7,7 +7,14 @@ export const performClinicalAnalysis = async (
   answers: Answer[],
   questions: Question[]
 ): Promise<AssessmentResult> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Safe access to process.env to prevent white screen if process is undefined
+  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : '';
+  
+  if (!apiKey) {
+    throw new Error("API Key is missing. Please configure it in environment variables.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   const dataString = answers.map(a => {
     const q = questions.find(que => que.id === a.questionId);
@@ -17,36 +24,36 @@ export const performClinicalAnalysis = async (
   const prompt = `
     ПРЕДВАРИТЕЛЬНАЯ ОЦЕНКА РАЗВИТИЯ КОММУНИКАЦИИ.
     Пациент: ${childInfo.name}, ${childInfo.age} лет.
-    Данные теста:
+    Данные тестирования:
     ${dataString}
 
     ЗАДАЧА:
-    Составь краткий, строго профессиональный отчет на ОДНУ СТРАНИЦУ А4 на РУССКОМ ЯЗЫКЕ.
-    Используй поиск Google для подтверждения диагнозов по МКБ-11 и актуальных исследований.
+    Составь профессиональный экспертный отчет на русском языке. 
+    Используй научные данные (RU/EN/DE) и МКБ-11.
     
-    СТРУКТУРА ОТЧЕТА (ОБЯЗАТЕЛЬНО БЕЗ ЦИФР И НУМЕРАЦИИ):
-    Заголовок: ПРЕДВАРИТЕЛЬНАЯ ОЦЕНКА
+    ПРАВИЛА ОФОРМЛЕНИЯ:
+    - НЕ используй цифры для разделов (1., 2. и т.д.).
+    - НЕ используй символы ** или #.
+    - Разделяй блоки только пустыми строками.
+    - Текст должен быть плотным, для листа А4.
+    
+    СТРУКТУРА:
+    ПРЕДВАРИТЕЛЬНАЯ ОЦЕНКА (это заголовок)
     
     РЕЗЮМЕ СОСТОЯНИЯ
-    Опиши дефициты или их отсутствие.
+    (описание дефицитов)
     
     УРОВЕНЬ НАРУШЕНИЯ
-    Дай четкую клиническую формулировку.
+    (клинический статус)
     
     РЕКОМЕНДАЦИИ
-    Перечисли конкретные практические шаги через тире.
+    (шаги через тире)
     
     ПРОГНОЗ
-    Опиши развитие на ближайшие 1-2 года.
+    (динамика на 1-2 года)
     
     НАУЧНЫЕ ИСТОЧНИКИ
-    Ссылки на исследования (RU/EN/DE).
-
-    ОГРАНИЧЕНИЕ: 
-    - НЕ ИСПОЛЬЗУЙ цифры для разделов (никаких 1., 2. и т.д.).
-    - НЕ ИСПОЛЬЗУЙ символы ** или #. 
-    - Текст должен быть профессиональным и лаконичным.
-    - Разделяй блоки двойным переносом строки.
+    (конкретные ссылки на статьи и исследования)
   `;
 
   try {
@@ -55,12 +62,11 @@ export const performClinicalAnalysis = async (
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
-        temperature: 0.4,
+        temperature: 0.3,
       },
     });
 
-    const text = response.text || "Ошибка генерации отчета.";
-    // Clean up any remaining markdown artifacts just in case
+    const text = response.text || "Ошибка генерации текста.";
     const cleanText = text.replace(/[*#]/g, '').trim();
     
     return {
@@ -72,6 +78,6 @@ export const performClinicalAnalysis = async (
     };
   } catch (error) {
     console.error("Clinical Analysis Error:", error);
-    throw new Error("Сбой анализа данных.");
+    throw error;
   }
 };

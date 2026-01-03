@@ -4,65 +4,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Communication Assessment</title>
+    <title>Diagnostic System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
       body { 
         margin: 0; 
         padding: 0; 
         font-family: 'Inter', sans-serif; 
         background-color: #f8fafc; 
-        color: #1e293b;
+        color: #0f172a;
+        -webkit-print-color-adjust: exact;
       }
       .font-serif { font-family: 'Lora', serif; }
-      
-      /* Special styling for clinical report headers within the summary text */
-      .clinical-text {
-        text-align: justify;
-      }
 
       @media print {
         @page {
           size: A4;
-          margin: 15mm;
+          margin: 20mm;
         }
+        body { background: white !important; }
         .no-print { display: none !important; }
-        body { 
-          background: white !important; 
-          padding: 0 !important;
-          margin: 0 !important;
-        }
-        #root { 
-          padding: 0 !important; 
-          margin: 0 !important;
-        }
-        .min-h-screen { 
-          min-height: auto !important; 
-          display: block !important;
-          padding: 0 !important;
-        }
-        .max-w-2xl { 
-          max-width: 100% !important; 
-        }
-        .printable-area { 
-          width: 100% !important; 
-          box-shadow: none !important;
-          border: none !important;
-          padding: 0 !important;
-          margin: 0 !important;
-        }
-        .bg-white { 
-          background: white !important; 
-          border: none !important;
-        }
-        /* Ensure the report fits on one page */
-        .clinical-text {
-          font-size: 11pt !important;
-          line-height: 1.5 !important;
-        }
+        #root { padding: 0 !important; margin: 0 !important; }
+        .min-h-screen { min-height: auto !important; display: block !important; padding: 0 !important; }
+        .max-w-2xl { max-width: 100% !important; }
+        .printable-area { width: 100% !important; margin: 0 !important; }
+        .bg-slate-50 { background: white !important; }
+        .shadow-2xl, .shadow-xl, .shadow-sm { box-shadow: none !important; }
+        .border, .border-2 { border-color: #f1f5f9 !important; }
+        .text-indigo-900 { color: #1e1b4b !important; border-bottom: 1px solid #e2e8f0 !important; }
+        .clinical-text { font-size: 11pt !important; line-height: 1.6 !important; color: black !important; }
       }
     </style>
 <script type="importmap">

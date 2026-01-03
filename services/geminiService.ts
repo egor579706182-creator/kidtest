@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { ChildInfo, Answer, Question, AssessmentResult } from '../types';
 
@@ -7,13 +6,19 @@ export const performClinicalAnalysis = async (
   answers: Answer[],
   questions: Question[]
 ): Promise<AssessmentResult> => {
-  // Check multiple possible env variable names used in common deployment setups
-  const apiKey = typeof process !== 'undefined' 
-    ? (process.env.API_KEY || process.env.VITE_API_KEY) 
-    : '';
+  // Безопасный доступ к ключам через проверку существования process и env
+  const getApiKey = (): string => {
+    try {
+      return process.env.API_KEY || (process.env as any).VITE_API_KEY || "";
+    } catch (e) {
+      return (window as any).process?.env?.API_KEY || (window as any).process?.env?.VITE_API_KEY || "";
+    }
+  };
+
+  const apiKey = getApiKey();
   
   if (!apiKey) {
-    throw new Error("Критическая ошибка: API_KEY не настроен. Пожалуйста, добавьте API_KEY в переменные окружения Vercel.");
+    throw new Error("Ключ API не найден. Убедитесь, что переменная API_KEY или VITE_API_KEY установлена в настройках Vercel.");
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -24,62 +29,60 @@ export const performClinicalAnalysis = async (
   }).join('\n');
 
   const prompt = `
-    ПРЕДВАРИТЕЛЬНАЯ ОЦЕНКА РАЗВИТИЯ КОММУНИКАЦИИ.
-    Пациент: ${childInfo.name}, ${childInfo.age} лет.
-    Данные тестирования:
+    КЛИНИЧЕСКИЙ ОТЧЕТ ПО РАЗВИТИЮ КОММУНИКАЦИИ.
+    Пациент: ${childInfo.name}, ${childInfo.age} лет, пол: ${childInfo.gender === 'Male' ? 'Мужской' : 'Женский'}.
+    Результаты анкетирования (30 параметров):
     ${dataString}
 
     ЗАДАЧА:
-    Составь профессиональный экспертный отчет на русском языке. 
-    Используй научные данные (RU/EN/DE) и МКБ-11.
+    Сгенерируй профессиональное заключение для высококвалифицированных специалистов. 
+    Используй последние научные данные (RU, EN, DE), МКБ-11 и DSM-5. 
     
-    ПРАВИЛА ОФОРМЛЕНИЯ:
-    - НЕ используй цифры для разделов (1., 2. и т.д.).
-    - НЕ используй символы ** или #.
-    - Разделяй блоки только пустыми строками.
-    - Текст должен быть плотным, для листа А4.
+    ВАЖНЫЕ ТРЕБОВАНИЯ К ТЕКСТУ:
+    1. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО использовать символы ** (двойные звездочки) и # (решетки).
+    2. Используй только обычный текст и пустые строки между абзацами.
+    3. Структура должна быть четкой, без нумерованных списков.
     
-    СТРУКТУРА:
-    ПРЕДВАРИТЕЛЬНАЯ ОЦЕНКА (это заголовок)
+    СТРУКТУРА ОТЧЕТА:
+    ПРЕДВАРИТЕЛЬНАЯ ОЦЕНКА
+    (основной диагноз или направление дефицита)
     
-    РЕЗЮМЕ СОСТОЯНИЯ
-    (описание дефицитов)
+    КЛИНИЧЕСКИЙ СТАТУС
+    (подробный анализ речевых, социальных и когнитивных функций на основе ответов)
     
-    УРОВЕНЬ НАРУШЕНИЯ
-    (клинический статус)
+    ТЕРАПЕВТИЧЕСКИЕ РЕКОМЕНДАЦИИ
+    (конкретный план действий для специалистов и родителей)
     
-    РЕКОМЕНДАЦИИ
-    (шаги через тире)
+    ПРОГНОСТИЧЕСКАЯ МОДЕЛЬ
+    (прогноз развития на основе текущих показателей)
     
-    ПРОГНОЗ
-    (динамика на 1-2 года)
-    
-    НАУЧНЫЕ ИСТОЧНИКИ
-    (конкретные ссылки на статьи и исследования)
+    НАУЧНОЕ ОБОСНОВАНИЕ
+    (ссылки на современные исследования и стандарты диагностики)
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
-        temperature: 0.3,
+        temperature: 0.2,
+        thinkingConfig: { thinkingBudget: 0 } // Для минимизации задержки
       },
     });
 
-    const text = response.text || "Ошибка генерации текста.";
-    const cleanText = text.replace(/[*#]/g, '').trim();
+    // Удаляем любые остаточные маркеры разметки на всякий случай
+    const text = (response.text || "").replace(/[*#_]/g, '').trim();
     
     return {
-      summary: cleanText,
+      summary: text,
       severityLevel: "",
       recommendations: [],
       prognosis: "",
       scientificReferences: response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: any) => chunk.web?.uri).filter(Boolean) || []
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Clinical Analysis Error:", error);
-    throw error;
+    throw new Error(error.message || "Ошибка генерации отчета. Проверьте соединение и API ключ.");
   }
 };
